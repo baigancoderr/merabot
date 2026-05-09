@@ -99,22 +99,27 @@ const WalletHero = () => {
     value: `$${format3(overview.wallets.deposit)}`,
     sub: "Wallet Balance",
   },
-  {
-    title: "REFERRAL (Usdc)",
-    value: `$${format3(overview.wallets.referral)}`,
-    sub: "Earnings",
-  },
-  {
-    title: "ROI (CIP)",
-    value: `${format3(overview.wallets.roi)}`,
-     sub: "Earnings",
-  },
-  {
+    {
     title: "TOTAL INVESTMENT",
 
     value: `$${format3(overview.investments.totalInvested)}`,
     sub: "All Time",
   },
+{
+  title: "REFERRAL (Usdc)",
+  value: `$${format3(overview.wallets.referral)}`,
+  sub: "Earnings",
+  button: "Withdraw",
+  path: "/settings/withdraw-usdt",
+},
+{
+  title: "ROI (CIP)",
+  value: `${format3(overview.wallets.roi)}`,
+  sub: "Earnings",
+  button: "Withdraw",
+  path: "/settings/withdraw-usdt",
+},
+
 ];
 
 
@@ -177,9 +182,46 @@ const WalletHero = () => {
           {item.value}
         </p>
 
-        <p className="text-xs text-gray-400 mt-2">
-          {item.sub}
-        </p>
+    <p className="text-xs text-gray-400 mt-2">
+  {item.sub}
+</p>
+
+{item.button && (
+  <button
+    onClick={() => navigate(item.path)}
+    className="
+      relative mt-3 w-full overflow-hidden
+      rounded-lg border border-[#5B7FFF]
+      bg-[linear-gradient(180deg,#0B1020_0%,#132A63_100%)]
+      px-4 py-1.5
+      text-xs font-semibold tracking-wide text-white
+      shadow-[0_0_5px_rgba(88,127,255,0.25)]
+      transition-all duration-300
+
+      hover:scale-[1.02]
+      hover:border-[#8EA7FF]
+      hover:shadow-[0_0_10px_rgba(88,127,255,0.45)]
+
+      active:scale-[0.98]
+    "
+  >
+    {/* Glow Effect */}
+    <span
+      className="
+        absolute inset-0
+        bg-gradient-to-r from-transparent via-white/10 to-transparent
+        translate-x-[-120%]
+        hover:translate-x-[120%]
+        transition-transform duration-700
+      "
+    />
+
+    {/* Button Content */}
+    <span className="relative z-10 flex items-center justify-center gap-2">
+      Withdraw
+    </span>
+  </button>
+)}
 
       </div>
     </div>

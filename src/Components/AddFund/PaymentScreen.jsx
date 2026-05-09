@@ -13,42 +13,56 @@ const PaymentScreen = () => {
   
   // Get data passed from AddFundPage
   const { 
-    amount, 
-    coin, 
-    walletAddress, 
-    qrData 
-  } = location.state || {};
+  amount, 
+  coin, 
+  walletAddress, 
+  qrData,
+  expiresAt,
+} = location.state || {};
 
-  const [time, setTime] = useState(1200); // 20 minutes in seconds
+  const [time, setTime] = useState(() => {
+  if (!expiresAt) return 0;
+
+  const diff = Math.floor(
+    (new Date(expiresAt).getTime() - Date.now()) / 1000
+  );
+
+  return diff > 0 ? diff : 0;
+});
   const [isExpired, setIsExpired] = useState(false);
 
   // Timer
-  useEffect(() => {
-    if (time <= 0) return;
+useEffect(() => {
+  if (time <= 0) {
+    setIsExpired(true);
+    return;
+  }
 
-    const timer = setInterval(() => {
-      setTime((prev) => {
-        if (prev <= 1) {
-          setIsExpired(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+  const timer = setInterval(() => {
+    setTime((prev) => {
+      if (prev <= 1) {
+        clearInterval(timer);
+        setIsExpired(true);
+        return 0;
+      }
 
-    return () => clearInterval(timer);
-  }, [time]);
+      return prev - 1;
+    });
+  }, 1000);
+
+  return () => clearInterval(timer);
+}, [time]);
 
   // Auto redirect when time expires
-  useEffect(() => {
-    if (isExpired) {
-      toast.error("Payment Time Expired ⏳", { duration: 2000 });
+  // useEffect(() => {
+  //   if (isExpired) {
+  //     toast.error("Payment Time Expired ⏳", { duration: 2000 });
       
-      setTimeout(() => {
-        navigate("/addfund", { replace: true });
-      }, 1500);
-    }
-  }, [isExpired, navigate]);
+  //     setTimeout(() => {
+  //       navigate("/addfund", { replace: true });
+  //     }, 1500);
+  //   }
+  // }, [isExpired, navigate]);
 
   // Format Time (MM:SS)
   const formatTime = () => {
@@ -166,17 +180,38 @@ const PaymentScreen = () => {
             </div>
           </div>
 
+          {isExpired && (
+  <div className="bg-yellow-500/10 border border-yellow-500 rounded-xl p-3 text-yellow-400 text-xs leading-relaxed mb-4">
+    ⚠️ This payment session has expired.
+    You can still send funds to this address, but confirmation may take longer.
+    For faster processing, generate a new deposit address.
+  </div>
+)}
+
           {/* QR CODE */}
           <div className="rounded-2xl border-2 border-[#444385] overflow-hidden text-center mb-5">
             <div className="bg-[#00000033] p-5 backdrop-blur-[20px]">
-              <div className="bg-white p-3 rounded-xl inline-block">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData || walletAddress)}`}
-                  alt="QR Code"
-                  className="w-44 h-44"
-                />
+              <div className="relative inline-block p-3 rounded-[2rem]">
+                <div className="absolute -inset-4 m-auto w-64 h-64 rounded-full border-2 border-blue-400/20"></div>
+                <div className="relative bg-white p-4 rounded-[2rem] inline-block">
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=30&ecc=H&data=${encodeURIComponent(qrData || walletAddress)}`}
+                    alt="QR Code"
+                    className="w-56 h-56"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center">
+                      <img src={usdt} alt="USDT" className="w-7 h-7 object-contain" />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <p className="text-sm text-gray-400 mt-3">Scan QR Code to Pay</p>
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <p className="text-sm text-gray-400">Scan QR Code to Pay</p>
+                <span className="text-xs text-[#81ECFF] bg-white/10 px-3 py-1 rounded-full border border-[#81ECFF33]">
+                  Base network
+                </span>
+              </div>
             </div>
           </div>
 
@@ -191,16 +226,18 @@ const PaymentScreen = () => {
 
               <div className="flex gap-2">
                 <button
-                  onClick={() => handleCopy(walletAddress)}
-                  className="flex-1 bg-[linear-gradient(45deg,#587FFF,#09239F)] hover:brightness-110 text-white text-sm py-3 rounded-full flex items-center justify-center gap-2 transition-all active:scale-95"
+  disabled={isExpired}
+  onClick={() => handleCopy(walletAddress)}
+                  className="flex-1 bg-[linear-gradient(45deg,#587FFF,#09239F)] hover:brightness-110 text-white text-sm py-3 rounded-full flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Copy size={16} />
                   Copy
                 </button>
 
-                <button
-                  onClick={() => handleShare(walletAddress)}
-                  className="flex-1 bg-[linear-gradient(45deg,#587FFF,#09239F)] hover:brightness-110 text-white text-sm py-3 rounded-full flex items-center justify-center gap-2 transition-all active:scale-95"
+             <button
+  disabled={isExpired}
+  onClick={() => handleShare(walletAddress)}
+                  className="flex-1 bg-[linear-gradient(45deg,#587FFF,#09239F)] hover:brightness-110 text-white text-sm py-3 rounded-full flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Share2 size={16} />
                   Share
@@ -211,7 +248,14 @@ const PaymentScreen = () => {
 
           
 
-        
+        {isExpired && (
+  <button
+    onClick={() => navigate("/addfund")}
+    className="w-full mt-4 py-3 rounded-full bg-red-500 text-white font-semibold"
+  >
+    Generate New Address
+  </button>
+)}
           
         
 

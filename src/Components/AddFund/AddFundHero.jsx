@@ -146,15 +146,17 @@ const AddFundPage = () => {
    if (data.success && data.deposit?.address) {
   toast.success("Payment address generated");
 
-  navigate("/payment", {
-    state: {
-      amount,
-      coin: selected.coin,
-      network: selected.label,
-      walletAddress: data.deposit.address,
-      qrData: data.deposit.qr_code || data.deposit.address,
-    },
-  });
+navigate("/payment", {
+  state: {
+    amount,
+    coin: selected.coin,
+    network: selected.label,
+    walletAddress: data.deposit.address,
+    qrData: data.deposit.qr_code || data.deposit.address,
+    expiresAt: data.deposit.expiresAt,
+  },
+});
+
 }
     
     

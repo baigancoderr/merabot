@@ -117,24 +117,33 @@ const [investmentChartData, setInvestmentChartData] = useState(null);
 }, []);
 
   // Icon Mapping (Backend does not send icons)
-  const getIcon = (title) => {
-    switch (title?.toUpperCase()) {
-      case "LIVE PRICE":
-        return <TrendingUp size={18} />;
-      case "TOTAL DEPOSIT":
-        return <DollarSign size={18} />;
-      case "WALLET BALANCE":
-        return <Wallet size={18} />;
-      case "TOTAL EARNINGS":
-        return <Coins size={18} />;
-      // case "ACTIVE PACKAGE":
-      //   return <BarChart3 size={18} />;
-      case "TEAM":
-        return <Users size={18} />;
-      default:
-        return <TrendingUp size={18} />;
-    }
-  };
+ const getIcon = (title) => {
+  switch (title?.toUpperCase()) {
+    case "LIVE PRICE (CIP)":
+      return <TrendingUp size={18} />;
+
+    case "TOTAL DEPOSIT":
+      return <DollarSign size={18} />;
+
+    case "WALLET BALANCE":
+      return <Wallet size={18} />;
+
+    case "TOTAL EARNINGS":
+      return <Coins size={18} />;
+
+    case "TOTAL USERS":
+      return <Users size={18} />;
+
+    case "ACTIVE USERS":
+      return <Users size={18} className="text-green-400" />;
+
+    case "TEAM":
+      return <Users size={18} />;
+
+    default:
+      return <TrendingUp size={18} />;
+  }
+};
 
   // Fetch Dashboard Data from Backend
 const {

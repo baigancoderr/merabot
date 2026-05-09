@@ -117,7 +117,7 @@ const handleInvest = async () => {
   }
 
   if (!investAmount || investAmount < 5) {
-    toast.error("Minimum investment amount is 5 CPR");
+    toast.error("Minimum investment amount is 5");
     return;
   }
 
@@ -247,8 +247,19 @@ const startDate = new Date().toLocaleDateString();
             </div>
           </div>
 
-
-           
+          <div className="rounded-2xl border-2 border-[#444385] overflow-hidden mb-6">
+            <div className="bg-[#00000033] p-4 backdrop-blur-[20px]">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-gray-400 text-sm">Deposit Wallet Balance</p>
+                  <p className="text-emerald-400 text-2xl font-semibold mt-2">
+                    {overviewLoading ? "..." : Number(overview?.wallets?.deposit || 0).toFixed(3)}
+                  </p>
+                </div>
+                <Wallet size={28} className="text-[#81ECFF]" />
+              </div>
+            </div>
+          </div>
 
           {/* Deposit Input */}
          <div className="my-6">
