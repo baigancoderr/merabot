@@ -89,7 +89,7 @@ const SettingsComponent = () => {
     },
     {
       icon: <Wallet size={18} />,
-      title: "Withdraw USDT",
+      title: "Withdraw",
       subtitle: "Transfer funds",
       action: () => navigate("/settings/withdraw-usdt"),
     },

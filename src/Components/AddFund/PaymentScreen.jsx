@@ -260,9 +260,22 @@ useEffect(() => {
         
 
         
-          <p className="text-center text-[10px] text-gray-500 pt-2">
-            Funds will be credited automatically after network confirmation
-          </p>
+         <p className="text-center text-[10px] text-gray-200 pt-2">
+  Funds will be credited automatically after network confirmation
+</p>
+
+<div className="mt-3 rounded-xl border border-yellow-500/30 bg-yellow-500/10 p-3">
+  <p className="text-yellow-400 text-xs font-semibold mb-1">
+    Note:
+  </p>
+
+  <p className="text-[11px] leading-relaxed text-yellow-100/80">
+    After completing the payment, please allow at least 
+    <span className="text-yellow-300 font-semibold"> 5 minutes </span>
+    for blockchain network confirmation and balance update.  
+    Confirmation time may vary depending on network traffic.
+  </p>
+</div>
 
         </div>
       </div>

@@ -344,6 +344,7 @@ const handleSaveEmail = async () => {
       <div className="space-y-3">
         <div className="flex items-center justify-between mb-1">
           <p className="text-sm text-gray-400">Your Wallet address</p>
+          
           {!isEditing && (
             <button
               onClick={handleUpdate}
@@ -357,6 +358,17 @@ const handleSaveEmail = async () => {
         {isEditing ? (
           <>
             <div className="relative">
+              <div className="mt-2 mb-4 rounded-xl border border-blue-500/20 bg-blue-500/10 p-3">
+  <p className="text-blue-400 text-xs font-semibold mb-1">
+    Note:
+  </p>
+
+  <p className="text-[11px] leading-relaxed text-blue-100/80">
+    Please enter your 
+    <span className="text-blue-300 font-semibold"> Base Network </span>
+    wallet address only. Sending assets from unsupported networks may result in permanent loss of funds.
+  </p>
+</div>
               <input
                 type="text"
                 value={walletAddress}
