@@ -9,8 +9,8 @@
 import axios from "axios";
 
 const api = axios.create({
-  // baseURL: "https://backend.cipera.net/",
-   baseURL: "http://localhost:5000",
+  baseURL: "https://backend.cipera.net/",
+  //  baseURL: "http://localhost:5000",
   
 });
 
