@@ -327,7 +327,8 @@ const stats = dashboard.stats
     (item) =>
       item.title !== "ACTIVE PACKAGE" &&
     item.title !== "WALLET BALANCE" &&
-    item.title !== "ROI EARNINGS"
+    item.title !== "ROI EARNINGS" &&
+    item.title !== "DIRECT TEAM"
   )
   .map((item) => ({
     ...item,
@@ -393,6 +394,51 @@ const stats = dashboard.stats
             </motion.div>
           ))}
         </motion.div>
+
+
+        {/* DEXSCREENER CHART */}
+<motion.div
+  className="rounded-2xl border-2 border-[#444385] overflow-hidden"
+  initial={{ y: 20, opacity: 0 }}
+  animate={{ y: 0, opacity: 1 }}
+  transition={{ delay: 0.25 }}
+>
+  <div className="bg-[#00000033] p-2 backdrop-blur-[20px]">
+    <style>
+      {`
+        #dexscreener-embed {
+          position: relative;
+          width: 100%;
+          padding-bottom: 125%;
+        }
+
+        @media (min-width: 1400px) {
+          #dexscreener-embed {
+            padding-bottom: 95%;
+          }
+        }
+
+        #dexscreener-embed iframe {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          top: 0;
+          left: 0;
+          border: 0;
+          border-radius: 16px;
+        }
+      `}
+    </style>
+
+    <div id="dexscreener-embed">
+      <iframe
+        src="https://dexscreener.com/base/0x5100eBE2e02b20FC92CA9339CFDD1C109a16186e?embed=1&loadChartSettings=0&chartLeftToolbar=0&chartDefaultOnMobile=1&chartTheme=dark&theme=dark&chartStyle=0&chartType=usd&interval=15"
+        title="DexScreener Chart"
+        allowFullScreen
+      />
+    </div>
+  </div>
+</motion.div>
 
         {/* CHART */}
        <motion.div
