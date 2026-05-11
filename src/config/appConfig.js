@@ -24,8 +24,8 @@
 // };
 
 export const appConfig = {
-  baseURL: "https://ciperabackend.onrender.com/",
-  frontendURL: "http://localhost:5173",
+  baseURL: "https://backend.cipera.net",
+  frontendURL: "https://app.cipera.net",
   chainID: 97n,
   // chainID: 56n,
   defaultReferral: "URWA00001",
