@@ -1,10 +1,3 @@
-// import axios from "axios";
-
-// const api = axios.create({
-//   baseURL: "http://localhost:5000",
-// });
-
-// export default api;
 
 import axios from "axios";
 
@@ -14,7 +7,7 @@ const api = axios.create({
   
 });
 
-// ✅ REQUEST INTERCEPTOR (YAHI ADD KARNA HAI)
+
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");

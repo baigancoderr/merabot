@@ -201,7 +201,7 @@ useEffect(() => {
                   />
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="w-12 h-12 rounded-full bg-white shadow-sm flex items-center justify-center">
-                      <img src={usdt} alt="USDT" className="w-7 h-7 object-contain" />
+                      <img src={usdc} alt="USDC" className="w-7 h-7 object-contain" />
                     </div>
                   </div>
                 </div>

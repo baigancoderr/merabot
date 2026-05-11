@@ -1,256 +1,227 @@
 'use client';
-import React, { useRef, useState, useEffect, useCallback, useMemo } from "react";
-import Tree from "react-d3-tree";
-import { ArrowLeft, User } from "lucide-react";
-import api from "../../../api/axios";
-import toast from "react-hot-toast";
+import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { ArrowLeft, User, Users, TrendingUp, Award } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import api from "../../../api/axios";
+import bgImg from "../../../assets/bgImg.png";
+import toast from "react-hot-toast";
 
 const ReferralTeamTree = () => {
-  const [translate, setTranslate] = useState({ x: 0, y: 0 });
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedUser, setSelectedUser] = useState(null);
 
-  const treeContainer = useRef(null);
-
-  // Fetch Actual Team Tree from API
-  const {
-  data: treeDataRaw,
-  isLoading: loading,
-  isError,
-} = useQuery({
-  queryKey: ["teamTree"],
-  queryFn: async () => {
-    const res = await api.get("/user/team-tree-view");
-
-    if (res.data.status !== "success") {
-      throw new Error(res.data.message || "Failed to fetch");
-    }
-
-    return res.data.data.tree || [];
-  },
-  staleTime: 5 * 60 * 1000, // 5 min  fresh 
-  cacheTime: 10 * 60 * 1000, // 10 min 
-});
-
-
-
-
-
-const treeData = useMemo(() => {
-  if (!treeDataRaw) return [];
-
-  const transformNode = (node) => ({
-    name: node.name || node.username || "Unknown",
-    attributes: {
-      Name: (node.name || node.username || "Unknown User").trim(),
-      UserId: node.userId || node.referralCode || "N/A",
-      SelfInvestment: node.selfInvestment || 0,
+  // Fetch Team Tree
+  const { data: treeDataRaw, isLoading, isError } = useQuery({
+    queryKey: ["teamTree"],
+    queryFn: async () => {
+      const res = await api.get("/user/team-tree-view");
+      if (res.data.status !== "success") {
+        throw new Error(res.data.message || "Failed to fetch team");
+      }
+      return res.data.data.tree || [];
     },
-    children: node.children ? node.children.map(transformNode) : [],
+    staleTime: 5 * 60 * 1000,
   });
 
-  return treeDataRaw.map(transformNode);
-}, [treeDataRaw]);
+  // Flatten tree into list for easy card display
+  const allMembers = useMemo(() => {
+    const members = [];
 
-  
+    const traverse = (node, level = 0) => {
+      members.push({ ...node, level });
+      if (node.children?.length) {
+        node.children.forEach(child => traverse(child, level + 1));
+      }
+    };
+
+    treeDataRaw?.forEach(node => traverse(node));
+    return members;
+  }, [treeDataRaw]);
 
   // Search Filter
-  const filteredTreeData = useMemo(() => {
-    if (!treeData?.length) return [];
-    if (!searchTerm.trim()) return treeData;
-
-    const matchesSearch = (node) =>
-      node.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      node.attributes?.Name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      node.attributes?.UserId?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const filterNode = (node) => {
-      const filteredChildren = node.children?.map(filterNode).filter(Boolean) || [];
-      if (matchesSearch(node) || filteredChildren.length > 0) {
-        return { ...node, children: filteredChildren };
-      }
-      return null;
-    };
-
-    return treeData.map(filterNode).filter(Boolean);
-  }, [treeData, searchTerm]);
-
-  // Auto-center tree
-  useEffect(() => {
-    const updateTranslate = () => {
-      if (treeContainer.current) {
-        const { width, height } = treeContainer.current.getBoundingClientRect();
-        setTranslate({ x: width / 2, y: height * 0.15 });
-      }
-    };
-
-    if (!loading && treeData.length > 0) {
-      updateTranslate();
-      window.addEventListener("resize", updateTranslate);
-      return () => window.removeEventListener("resize", updateTranslate);
-    }
-  }, [loading, treeData]);
-
-//     useEffect(() => {
-//   if (isError) {
-//     toast.error("Failed to load team tree");
-//   }
-// }, [isError]);
-
-   useEffect(() => {
-  if (isError) {
-    console.error("Error fetching team tree:", isError);
-  }
-}, [isError]);
-
-  // Custom Node Renderer - Self Investment always shown below ID
-  const renderCustomNode = useCallback(({ nodeDatum, toggleNode }) => {
-    const attrs = nodeDatum.attributes || {};
-    const hasChildren = nodeDatum.children && nodeDatum.children.length > 0;
-    const isExpanded = !nodeDatum._collapsed;
-
-  
-
-    return (
-      <g>
-        <foreignObject x="-110" y="-75" width="220" height="155" style={{ overflow: "visible" }}>
-          <div
-            style={{
-              backgroundColor: "#0F1625",
-              border: "1px solid #444385",
-              borderRadius: "14px",
-              padding: "12px",
-              width: "220px",
-              boxShadow: "0 8px 25px rgba(0,0,0,0.4)",
-              cursor: hasChildren ? "pointer" : "default",
-            }}
-            onClick={hasChildren ? toggleNode : undefined}
-            className="hover:border-blue-500 transition-all duration-200"
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#587FFF] to-[#09239F] flex items-center justify-center flex-shrink-0">
-                <User size={22} color="#ffffff" />
-              </div>
-
-              <div style={{ flex: 1 }}>
-                <p style={{ fontWeight: 600, color: "#fff", margin: 0, fontSize: "15px" }}>
-                  {attrs.Name}
-                </p>
-                <p style={{ color: "#94a3b8", fontSize: "12.5px", margin: "3px 0 0" }}>
-                  ID: {attrs.UserId}
-                </p>
-
-                {/* Self Investment - Always shown below ID */}
-                <p
-                  style={{
-                    color: "#81ECFF",
-                    fontWeight: 700,
-                    fontSize: "14.5px",
-                    marginTop: "6px",
-                  }}
-                >
-                Investment: {Number(attrs.SelfInvestment).toLocaleString("en-IN")}
-                </p>
-              </div>
-            </div>
-          </div>
-        </foreignObject>
-
-        {/* Expand/Collapse Arrow */}
-        {hasChildren && (
-          <text
-            x="0"
-            y="50 "
-            textAnchor="middle"
-            fontSize="26"
-            fill="#60a5fa"
-            style={{ cursor: "pointer", userSelect: "none", fontWeight: "bold" }}
-            onClick={toggleNode}
-          >
-            {isExpanded ? "▼" : "▶"}
-          </text>
-        )}
-      </g>
+  const filteredMembers = useMemo(() => {
+    if (!searchTerm.trim()) return allMembers;
+    return allMembers.filter(member =>
+      member.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      member.userId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      member.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, []);
+  }, [allMembers, searchTerm]);
 
-  if (loading) {
+  const totalTeamCount = useMemo(
+    () => allMembers.length,
+    [allMembers]
+  );
+
+  const handleCardClick = (user) => {
+    setSelectedUser(user);
+  };
+
+  const closeDetail = () => setSelectedUser(null);
+
+  if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#0B0F19] flex items-center justify-center text-white">
+      <div className="min-h-screen flex items-center justify-center text-white" style={{ backgroundImage: `url(${bgImg})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p>Loading Team Tree...</p>
+          <p>Loading Team...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0F19] text-white pb-20 px-3">
+    <div className="min-h-screen text-white pb-2 px-3" style={{ backgroundImage: `url(${bgImg})`, backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed' }}>
       <div className="max-w-md mx-auto">
         {/* Header */}
-        <div className="flex items-center gap-3 py-6">
+        <div className="flex items-center gap-3 py-3">
           <button
             onClick={() => window.history.back()}
             className="p-2 rounded-lg bg-[#00000033] border border-[#444385]"
           >
-            <ArrowLeft size={20} />
+            <ArrowLeft size={18} />
           </button>
-          <h1 className="text-xl font-semibold">Referral Team Tree</h1>
+          <h1 className="text-xl font-semibold">My Referral Team</h1>
+        </div>
+
+        {/* Stats Row */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="bg-[#0F1625] border border-[#444385] rounded-xl p-4">
+            <p className="text-gray-400 text-xs">Total Team</p>
+            <p className="text-xl font-bold text-white mt-1">{totalTeamCount}</p>
+          </div>
+          <div className="bg-[#0F1625] border border-[#444385] rounded-xl p-4">
+            <p className="text-gray-400 text-xs">Team Investment</p>
+            <p className="text-xl font-bold text-[#81ECFF] mt-1">
+              ${treeDataRaw?.[0]?.teamInvestment || 0}
+            </p>
+          </div>
         </div>
 
         {/* Search */}
-        <div className="mb-6">
+        <div className="mb-4">
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search by name or ID..."
-            className="w-full bg-[#1F2937] border border-[#444385] rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
+            placeholder="Search by name, ID or email..."
+            className="w-full bg-[#1F2937] border border-[#444385] rounded-md px-4 py-2 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500"
           />
         </div>
 
-        {/* Tree Container */}
-        <div
-          ref={treeContainer}
-          className="border border-[#444385] rounded-3xl overflow-hidden bg-[#0B0F19] shadow-2xl"
-          style={{ height: "74vh", position: "relative" }}
-        >
-          <style jsx>{`
-            .rd3t-link {
-              stroke: #ffffff !important;
-              stroke-width: 2.5px !important;
-              fill: none !important;
-              stroke-opacity: 0.85;
-            }
-          `}</style>
-
-          {filteredTreeData?.length > 0 ? (
-            <Tree
-              data={filteredTreeData}
-              translate={translate}
-              orientation="vertical"
-              pathFunc="straight"
-              collapsible={true}
-              zoomable={true}
-              draggable={true}
-              renderCustomNodeElement={renderCustomNode}
-              separation={{ siblings: 2.0, nonSiblings: 2.5 }}
-              zoom={0.82}
-              initialDepth={3}
-              scaleExtent={{ min: 0.3, max: 3.5 }}
-              pathClassFunc={() => "rd3t-link"}
-            />
-          ) : (
-            <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-              {searchTerm ? "No matching members found" : "No team members found"}
+        {/* Team Members Cards */}
+        <div className="space-y-4">
+          {filteredMembers.length === 0 ? (
+            <div className="text-center py-12 text-gray-400">
+              No team members found
             </div>
+          ) : (
+            filteredMembers.map((member, index) => (
+              <motion.div
+                key={member.id || index}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.03 }}
+                onClick={() => handleCardClick(member)}
+                className={`rounded-2xl p-5 transition-all duration-300 cursor-pointer active:scale-[0.985] ${member.level === 0 ? "bg-[#2F290E] border border-[#F5C34D] hover:border-[#F5C34D]" : "bg-[#0F1625] border border-[#444385] hover:border-[#587FFF]"}`}
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#587FFF] to-[#09239F] flex items-center justify-center">
+                    <User size={24} color="#fff" />
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <p className="font-semibold text-lg truncate">{member.name || "Unnamed"}</p>
+                      <span className={`text-xs px-3 py-1 rounded-full ${member.level === 0 ? "bg-[#3F370F] text-[#F3D079] border border-[#F5C34D]" : "bg-[#1F2937] text-blue-400 border border-[#444385]"}`}>
+                        {member.level === 0 ? "YOU" : `Level ${member.level}`}
+                      </span>
+                    </div>
+
+                    <p className="text-[#94a3b8] text-sm">ID: {member.userId}</p>
+                    <p className="text-[#81ECFF] font-medium mt-2 text-sm">
+                      Self: ${member.selfInvestment || 0} | Team: ${member.teamInvestment || 0}
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            ))
           )}
         </div>
 
-        <div className="text-center text-xs text-gray-500 mt-6">
-          Drag to move • Scroll/Pinch to zoom • Tap card or arrow to expand/collapse
-        </div>
+        {/* Detail Modal */}
+        <AnimatePresence>
+          {selectedUser && (
+            <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="bg-[#0F1625] border border-[#587FFF] rounded-xl w-full max-w-md overflow-hidden"
+              >
+                <div className="p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h2 className="text-xl font-bold">{selectedUser.name}</h2>
+                      <p className="text-blue-400">ID: {selectedUser.userId}</p>
+                    </div>
+                    <button
+                      onClick={closeDetail}
+                      className="text-gray-400 hover:text-white"
+                    >
+                      ✕
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="bg-[#1A2338] rounded-xl p-3">
+  <p className="text-gray-400 text-sm">Email</p>
+  <p className="text-white truncate">
+    {selectedUser.email || "Not provided"}
+  </p>
+</div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-[#1A2338] rounded-xl p-3">
+                        <p className="text-gray-400 text-sm">Self Investment</p>
+                        <p className="text-xl font-bold text-[#81ECFF]">
+                          ${selectedUser.selfInvestment || 0}
+                        </p>
+                      </div>
+                      <div className="bg-[#1A2338] rounded-xl p-3">
+                        <p className="text-gray-400 text-sm">Team Investment</p>
+                        <p className="text-xl font-bold text-[#81ECFF]">
+                          ${selectedUser.teamInvestment || 0}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="bg-[#1A2338] rounded-xl p-3">
+                      <p className="text-gray-400 text-sm mb-2">Direct Referrals: {selectedUser.children?.length || 0}</p>
+                      {selectedUser.children?.length > 0 && (
+                        <div className="text-sm text-gray-300">
+                          {selectedUser.children.map((child, i) => (
+                            <p key={i}>• {child.name} ({child.userId})</p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* <div className="border-t border-[#444385] p-4">
+                  <button
+                    onClick={closeDetail}
+                    className="w-full py-3 bg-[#587FFF] hover:bg-[#6C8CFF] rounded-2xl font-medium transition"
+                  >
+                    Close Details
+                  </button>
+                </div> */}
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

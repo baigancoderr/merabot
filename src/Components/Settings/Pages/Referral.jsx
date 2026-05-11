@@ -1,5 +1,6 @@
 'use client';
 import React, { useState, useEffect ,useMemo } from "react";
+import bgImg from "../../../assets/bgImg.png";
 import btmimg from "../../../assets/btmimg.png";
 import { ArrowLeft, Users, Network, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -51,10 +52,8 @@ const Referral = () => {
 
     const traverse = (nodes) => {
       nodes.forEach((node) => {
-        if (node.level > 0) {
-          totalTeamSize += 1;
-          if (node.level === 1) directCount += 1;
-        }
+        totalTeamSize += 1;
+        if (node.level === 1) directCount += 1;
         if (node.children?.length) traverse(node.children);
       });
     };

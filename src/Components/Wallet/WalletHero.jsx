@@ -191,28 +191,39 @@ const WalletHero = () => {
     onClick={() => navigate(item.path)}
     className="
       relative mt-3 w-full overflow-hidden
-      rounded-lg border border-[#5B7FFF]
-      bg-[linear-gradient(180deg,#0B1020_0%,#132A63_100%)]
+      rounded-lg border border-[#3DFF9B]/40
+
+      bg-[linear-gradient(180deg,#052E1B_0%,#0B5D36_45%,#16A34A_100%)]
+
       px-4 py-1.5
-      text-xs font-semibold tracking-wide text-white
-      shadow-[0_0_5px_rgba(88,127,255,0.25)]
+      text-xs font-semibold tracking-[0.08em] text-white
+
+      shadow-[0_0_12px_rgba(34,197,94,0.35),inset_0_1px_0_rgba(255,255,255,0.12)]
       transition-all duration-300
 
       hover:scale-[1.02]
-      hover:border-[#8EA7FF]
-      hover:shadow-[0_0_10px_rgba(88,127,255,0.45)]
+      hover:border-[#86EFAC]
+      hover:shadow-[0_0_18px_rgba(34,197,94,0.55)]
 
       active:scale-[0.98]
     "
   >
-    {/* Glow Effect */}
+    {/* Premium Shine */}
     <span
       className="
         absolute inset-0
-        bg-gradient-to-r from-transparent via-white/10 to-transparent
+        bg-gradient-to-r from-transparent via-white/20 to-transparent
         translate-x-[-120%]
         hover:translate-x-[120%]
         transition-transform duration-700
+      "
+    />
+
+    {/* Top Glow */}
+    <span
+      className="
+        absolute inset-x-0 top-0 h-[1px]
+        bg-white/40
       "
     />
 
