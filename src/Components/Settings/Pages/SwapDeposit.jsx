@@ -251,6 +251,7 @@ const SwapDeposit = () => {
                       <th className="px-3 py-3 text-left">Swap ID</th>
                       <th className="px-3 py-3 text-left">From</th>
                       <th className="px-3 py-3 text-center">Amount</th>
+                      <th className="px-3 py-3 text-center">Fee</th>
                       <th className="px-3 py-3 text-center">Received</th>
                       <th className="px-3 py-3 text-center">Status</th>
                       <th className="px-3 py-3 text-right">Date</th>
@@ -280,8 +281,11 @@ const SwapDeposit = () => {
                         <td className="px-3 py-3 text-center text-white font-medium">
                           {item.fromAmount} {item.fromWallet === "referral" ? "USDC" : "CIP"}
                         </td>
+                        <td className="px-3 py-3 text-center text-white font-medium">
+                          {item.feePercentage != null ? `${item.feePercentage}%` : "-"}
+                        </td>
                         <td className="px-3 py-3 text-center font-semibold text-[#81ECFF]">
-                          ${item.toAmount?.toFixed(2)}
+                          {item.finalAmount != null ? `$${item.finalAmount.toFixed(2)}` : "-"}
                         </td>
                         <td className="px-3 py-3 text-center">
                           <span className={`text-xs px-2 py-1 rounded-full ${
