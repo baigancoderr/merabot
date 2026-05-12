@@ -39,18 +39,18 @@ const SettingsComponent = () => {
 }, []);
 
   const menuItems = [
-    // {
-    //   icon: <User size={18} />,
-    //   title: "Account",
-    //   subtitle: "Security, change number",
-    //   action: () => navigate("/settings/profile"),
-    // },
-       {
+    {
       icon: <User size={18} />,
       title: "Account",
       subtitle: "Security, change number",
-      action: () => navigate("/settings/WebProfile"),
+      action: () => navigate("/settings/profile"),
     },
+    //    {
+    //   icon: <User size={18} />,
+    //   title: "Account",
+    //   subtitle: "Security, change number",
+    //   action: () => navigate("/settings/WebProfile"),
+    // },
     {
       icon: <Users size={18} />,
       title: "My Referrals",

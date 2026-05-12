@@ -10,7 +10,7 @@ import PaymentScreen from "../Components/AddFund/PaymentScreen";
 import ReferralTeamTree from "../Components/Settings/Pages/ReferralTeamTree";
 
 import Loader from "../Context/Loader";
-import WebProfile from "../Components/Settings/Pages/WebProfile";
+// import WebProfile from "../Components/Settings/Pages/WebProfile";
 import Profile from "../Components/Settings/Pages/Profile";
 
 function AppWrapper() {
@@ -48,8 +48,8 @@ if (!ALLOW_BROWSER) {
 
       {/* 🔥 ROUTES */}
       <Routes>
-      {/* <Route path="/" element={<Navigate to="/settings/profile" replace />} /> */}
-      <Route path="/" element={<Navigate to="/settings/WebProfile" replace />} /> 
+      <Route path="/" element={<Navigate to="/settings/profile" replace />} />
+      {/* <Route path="/" element={<Navigate to="/settings/WebProfile" replace />} />  */}
 
           <Route path="/home" element={<Homepage />} />
         <Route path="/wallet" element={<Wallet />} />
@@ -60,8 +60,8 @@ if (!ALLOW_BROWSER) {
 
         {/* SETTINGS ROUTES */}
         <Route path="/settings" element={<Settings />} />
-        <Route path="/settings/WebProfile" element={<WebProfile />} />
-          {/* <Route path="/settings/profile" element={<Profile />} /> */}
+        {/* <Route path="/settings/WebProfile" element={<WebProfile />} /> */}
+          <Route path="/settings/profile" element={<Profile />} />
         <Route path="/settings/referral" element={<Settings />} />
         <Route path="/settings/referral-earning-history" element={<Settings />} />
         <Route path="/settings/investment-history" element={<Settings />} />
