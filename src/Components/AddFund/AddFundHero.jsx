@@ -113,8 +113,8 @@ const AddFundPage = () => {
     return;
   }
 
-  if (Number(amount) < 0.2) {
-    toast.error("Minimum deposit is $0.2 USDT");
+  if (Number(amount) < 10) {
+    toast.error("Minimum deposit is $10 USDT");
     return;
   }
 
@@ -254,7 +254,7 @@ navigate("/payment", {
               </div>
             </div>
 
-            <p className="text-xs text-blue-400 mt-2">Minimum: $ 1 USDT</p>
+            <p className="text-xs text-blue-400 mt-2">Minimum: $ 10 USDT</p>
           </div>
         </div>
 
