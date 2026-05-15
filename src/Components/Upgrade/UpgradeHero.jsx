@@ -58,6 +58,16 @@ const [overview, setOverview] = useState({
   roiInUsd: 0,
 });
 
+const [tokenInfo, setTokenInfo] = useState({
+  success: false,
+  token: "",
+  symbol: "",
+  totalSupply: 0,
+  burnSupply: 0,
+  updatedAt: "",
+});
+const [tokenLoading, setTokenLoading] = useState(true);
+
 useEffect(() => {
   const initTelegram = () => {
     const tg = window.Telegram?.WebApp;
@@ -87,6 +97,43 @@ useEffect(() => {
     }
   };
   fetchOverview();
+}, []);
+
+useEffect(() => {
+  const fetchTokenInfo = async () => {
+    setTokenLoading(true);
+    const endpoints = [
+      "/public/supply",
+      "/token/supply",
+      "/token/info",
+      "/token",
+      "/token/token-info",
+    ];
+
+    for (const ep of endpoints) {
+      try {
+        const res = await api.get(ep);
+        const data = res.data;
+        // Accept responses with either { success: true, ... } or { success: true: data: { ... } }
+        const payload = data.data || data;
+        if (payload && (payload.totalSupply !== undefined || payload.burnSupply !== undefined)) {
+          setTokenInfo({
+            success: payload.success ?? data.success ?? true,
+            token: payload.token || payload.symbol || "CIP",
+            symbol: payload.symbol || payload.token || "CIP",
+            totalSupply: Number(payload.totalSupply || 0),
+            burnSupply: Number(payload.burnSupply || payload.burnedSupply || payload.burned || 0),
+            updatedAt: payload.updatedAt || data.updatedAt || "",
+          });
+          break;
+        }
+      } catch (e) {
+        // try next endpoint
+      }
+    }
+    setTokenLoading(false);
+  };
+  fetchTokenInfo();
 }, []);
 
 const getTelegramId = () => {
@@ -241,7 +288,7 @@ const startDate = new Date().toLocaleDateString();
               <div className="bg-[#00000033] p-3 h-full backdrop-blur-[20px] transition-all duration-300 group-hover:bg-[linear-gradient(180deg,_#020204_0%,_#2C6096_100%)] group-hover:border-l-[5px] group-hover:border-l-[#587FFF]">
                 <p className="text-gray-400 text-sm">Burned Supply</p>
               <p className="text-emerald-400 text-md font-semibold mt-1">
-  {Number(0).toFixed(3)}
+  {tokenLoading ? "..." : Number(tokenInfo?.burnSupply || 0).toFixed(3)}
 </p>
               </div>
             </div>
@@ -257,6 +304,21 @@ const startDate = new Date().toLocaleDateString();
                   </p>
                 </div>
                 <Wallet size={28} className="text-[#81ECFF]" />
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border-2 border-[#444385] overflow-hidden mb-6">
+            <div className="bg-[#00000033] p-4 backdrop-blur-[20px]">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-gray-400 text-sm">Total Supply (Public)</p>
+                  <p className="text-emerald-400 text-2xl font-semibold mt-2">
+                    {tokenLoading ? "..." : Number(tokenInfo?.totalSupply || 0).toFixed(3)}
+                  </p>
+                  <p className="text-gray-400 text-xs mt-1">Updated: {tokenInfo?.updatedAt ? new Date(tokenInfo.updatedAt).toLocaleString() : "-"}</p>
+                </div>
+                <Coins size={28} className="text-[#FFD166]" />
               </div>
             </div>
           </div>

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, User, Users, TrendingUp, Award } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -10,6 +10,8 @@ import toast from "react-hot-toast";
 const ReferralTeamTree = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedUser, setSelectedUser] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   // Fetch Team Tree
   const { data: treeDataRaw, isLoading, isError } = useQuery({
@@ -48,6 +50,11 @@ const ReferralTeamTree = () => {
       member.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [allMembers, searchTerm]);
+
+  // Reset to first page when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
 
   const totalTeamCount = useMemo(
     () => allMembers.length,
@@ -117,36 +124,93 @@ const ReferralTeamTree = () => {
               No team members found
             </div>
           ) : (
-            filteredMembers.map((member, index) => (
-              <motion.div
-                key={member.id || index}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.03 }}
-                onClick={() => handleCardClick(member)}
-                className={`rounded-2xl p-5 transition-all duration-300 cursor-pointer active:scale-[0.985] ${member.level === 0 ? "bg-[#2F290E] border border-[#F5C34D] hover:border-[#F5C34D]" : "bg-[#0F1625] border border-[#444385] hover:border-[#587FFF]"}`}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#587FFF] to-[#09239F] flex items-center justify-center">
-                    <User size={24} color="#fff" />
-                  </div>
+            (() => {
+              const totalPages = Math.max(1, Math.ceil(filteredMembers.length / itemsPerPage));
+              const startIndex = (currentPage - 1) * itemsPerPage;
+              const paginated = filteredMembers.slice(startIndex, startIndex + itemsPerPage);
+              return (
+                <>
+                  {paginated.map((member, index) => {
+                    const cardClasses = member.isDeposited
+                      ? "bg-[linear-gradient(135deg,_#071824_0%,_#0D395A_100%)] border border-[#7FBCFF] hover:border-[#A8E4FF]"
+                      : member.level === 0
+                      ? "bg-[#2F290E] border border-[#F5C34D] hover:border-[#F5C34D]"
+                      : "bg-[#0F1625] border border-[#444385] hover:border-[#587FFF]";
+                    const badgeClasses = member.isDeposited
+                      ? "bg-[#07345B] text-[#B8EFFF] border border-[#7FBCFF]"
+                      : member.level === 0
+                      ? "bg-[#3F370F] text-[#F3D079] border border-[#F5C34D]"
+                      : "bg-[#1F2937] text-blue-400 border border-[#444385]";
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <p className="font-semibold text-lg truncate">{member.name || "Unnamed"}</p>
-                      <span className={`text-xs px-3 py-1 rounded-full ${member.level === 0 ? "bg-[#3F370F] text-[#F3D079] border border-[#F5C34D]" : "bg-[#1F2937] text-blue-400 border border-[#444385]"}`}>
-                        {member.level === 0 ? "YOU" : `Level ${member.level}`}
-                      </span>
-                    </div>
+                    return (
+                      <motion.div
+                        key={member.id || index}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.03 }}
+                        onClick={() => handleCardClick(member)}
+                        className={`rounded-2xl p-5 transition-all duration-300 cursor-pointer active:scale-[0.985] ${cardClasses}`}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#587FFF] to-[#09239F] flex items-center justify-center">
+                            <User size={24} color="#fff" />
+                          </div>
 
-                    <p className="text-[#94a3b8] text-sm">ID: {member.userId}</p>
-                    <p className="text-[#81ECFF] font-medium mt-2 text-sm">
-                      Self: ${member.selfInvestment || 0} | Team: ${member.teamInvestment || 0}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-3">
+                              <p className="font-semibold text-lg truncate">{member.name || "Unnamed"}</p>
+                              <span className={`text-xs px-3 py-1 rounded-full ${badgeClasses}`}>
+                                {member.isDeposited ? "PREMIUM" : member.level === 0 ? "YOU" : `Level ${member.level}`}
+                              </span>
+                            </div>
+
+                            <p className="text-[#94a3b8] text-sm">ID: {member.userId}</p>
+                            <p className="text-[#81ECFF] font-medium mt-2 text-sm">
+                              Self: ${member.selfInvestment || 0} | Team: ${member.teamInvestment || 0}
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+
+                  {/* Pagination Controls */}
+                  <div className="flex items-center justify-between mt-4">
+                    <p className="text-sm text-gray-400">
+                      Showing {startIndex + 1} - {Math.min(startIndex + paginated.length, filteredMembers.length)} of {filteredMembers.length}
                     </p>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className={`px-3 py-1 rounded-md ${currentPage === 1 ? 'bg-[#1F2937] text-gray-500 cursor-not-allowed' : 'bg-[#587FFF] text-white'}`}
+                      >
+                        Prev
+                      </button>
+
+                      {Array.from({ length: totalPages }).map((_, i) => (
+                        <button
+                          key={i}
+                          onClick={() => setCurrentPage(i + 1)}
+                          className={`px-3 py-1 rounded-md ${currentPage === i + 1 ? 'bg-white text-black' : 'bg-[#0F1625] text-gray-300 border border-[#444385]'}`}
+                        >
+                          {i + 1}
+                        </button>
+                      ))}
+
+                      <button
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className={`px-3 py-1 rounded-md ${currentPage === totalPages ? 'bg-[#1F2937] text-gray-500 cursor-not-allowed' : 'bg-[#587FFF] text-white'}`}
+                      >
+                        Next
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            ))
+                </>
+              );
+            })()
           )}
         </div>
 

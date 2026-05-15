@@ -12,7 +12,7 @@ import bgImg from "../assets/bgImg.png";
 import ReferralEarningsHistory from "../Components/Settings/Pages/ReferralEarningsHistory";
 import DepositHistory from "../Components/Settings/Pages/DepositHistory";
 import WithdrawUsdt from "../Components/Settings/Pages/WithdrawUsdt";
-// import WebProfile from "../Components/Settings/Pages/WebProfile";
+import WebProfile from "../Components/Settings/Pages/WebProfile";
 import SwapDeposit from "../Components/Settings/Pages/SwapDeposit";
 
 const Settings = () => {
