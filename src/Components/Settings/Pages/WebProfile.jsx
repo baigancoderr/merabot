@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import api from "../../../api/axios";
 import SkeletonPage from "../../../Layout/Skeleton";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { QRCodeSVG } from "qrcode.react";
 
 const fetchMe = async () => {
   const token = localStorage.getItem("token");
@@ -41,6 +42,7 @@ const [activeInfoTab, setActiveInfoTab] = useState("wallet");
   const [emailEdit, setEmailEdit] = useState("");
 const [isEmailEditing, setIsEmailEditing] = useState(false);
 const [emailSaving, setEmailSaving] = useState(false);
+const [showQR, setShowQR] = useState(false);
 
   // TanStack Query for /me
   const {
@@ -281,17 +283,23 @@ const handleSaveEmail = async () => {
         {/* Profile Card */}
         <div className="relative rounded-2xl border border-[#81ECFF99] p-[1px] mb-6 bg-gradient-to-br from-blue-500/20 to-black/30">
           <div className="rounded-2xl p-5 bg-[#0B0F19]">
-            <div className="flex items-center gap-4">
-              <img
-                src={userimg2}
-                className="w-20 h-20 rounded-full border border-white/20 object-cover"
-                alt="user"
-              />
-              <div>
-                <h2 className="text-xl font-bold">{apiUser.name}</h2>
-                <p className="text-sm text-gray-400">{apiUser.email}</p>
-              </div>
-            </div>
+           <div className="flex items-center gap-4 min-w-0">
+  <img
+    src={userimg2}
+    className="w-20 h-20 rounded-full border border-white/20 object-cover shrink-0"
+    alt="user"
+  />
+
+  <div className="min-w-0 flex-1">
+    <h2 className="text-xl font-bold truncate">
+      {apiUser.name}
+    </h2>
+
+    <p className="text-sm text-gray-400 break-all">
+      {apiUser.email}
+    </p>
+  </div>
+</div>
 
             <div className="grid grid-cols-2 gap-3 mt-6">
               <div className="bg-[#00000020] p-3 rounded-xl border border-[#444B55]">
@@ -506,24 +514,84 @@ const handleSaveEmail = async () => {
         {/* Referral Section */}
         <div className="rounded-xl border border-[#444B55] p-5 bg-[#00000020]">
           <p className="text-sm text-gray-300 mb-3">Your Referral Link</p>
-          <div className="bg-black border border-[#81ECFF] rounded-xl p-3 text-xs break-all mb-4">
-            {referralLink}
-          </div>
+         <div className="bg-black border border-[#81ECFF] rounded-lg px-3 py-2 text-xs mb-3 overflow-hidden whitespace-nowrap text-ellipsis">
+  {referralLink}
+</div>
           <div className="flex gap-3">
-            <button
-              onClick={handleCopy}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-[#587FFF] to-[#09239F] rounded-xl"
-            >
-              <Copy size={18} /> Copy
-            </button>
-            <button
-              onClick={handleShare}
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-[#587FFF] to-[#09239F] rounded-xl"
-            >
-              <Share2 size={18} /> Share
-            </button>
-          </div>
+  <button
+    onClick={handleCopy}
+    className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-[#587FFF] to-[#09239F] rounded-xl"
+  >
+    <Copy size={18} /> Copy
+  </button>
+
+  <button
+    onClick={handleShare}
+    className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-[#587FFF] to-[#09239F] rounded-xl"
+  >
+    <Share2 size={18} /> Share
+  </button>
+
+  {/* QR BUTTON */}
+  <button
+    onClick={() => setShowQR(true)}
+    className="flex-1 flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-[#587FFF] to-[#09239F] rounded-xl"
+  >
+    QR Code
+  </button>
+</div>
+
+
         </div>
+
+
+        {/* QR Modal */}
+{showQR && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+    
+    <div className="relative w-full max-w-sm rounded-3xl border border-[#81ECFF55] bg-[#0B0F19] p-6 text-center">
+
+      {/* Close */}
+      <button
+        onClick={() => setShowQR(false)}
+        className="absolute top-3 right-3 text-gray-400 hover:text-white"
+      >
+        <X size={20} />
+      </button>
+
+      <h2 className="text-xl font-semibold mb-2">
+        Referral QR Code
+      </h2>
+
+      <p className="text-sm text-gray-400 mb-6">
+        Scan this QR to join directly
+      </p>
+
+      {/* QR */}
+      <div className="bg-white p-4 rounded-2xl inline-block">
+     <QRCodeSVG
+  value={referralLink}
+  size={200}
+/>
+      </div>
+
+      {/* Link */}
+      <p className="text-xs text-gray-500 break-all mt-5">
+        {referralLink}
+      </p>
+
+      {/* Copy */}
+      <button
+        onClick={handleCopy}
+        className="w-full mt-5 py-3 rounded-xl bg-gradient-to-r from-[#587FFF] to-[#09239F]"
+      >
+        Copy Referral Link
+      </button>
+    </div>
+  </div>
+)}
+
+
       </div>
     </div>
   );

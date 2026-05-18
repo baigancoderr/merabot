@@ -10,6 +10,7 @@ import {
   Copy,
   Share2,
   User,
+  X,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
@@ -26,6 +27,7 @@ import {
   Tooltip,
   Filler,
 } from "chart.js";
+import { QRCodeSVG } from "qrcode.react";
 
 ChartJS.register(
   LineElement,
@@ -42,6 +44,7 @@ const HomeDashboard = () => {
   const [depositsLoading, setDepositsLoading] = useState(true);
   const [chartFilter, setChartFilter] = useState("1W");
 const [investmentChartData, setInvestmentChartData] = useState(null);
+const [showQR, setShowQR] = useState(false);
   // const [dashboardData, setDashboardData] = useState(null);
   // const [loading, setLoading] = useState(true);
   // const [error, setError] = useState(null);
@@ -492,9 +495,9 @@ const stats = dashboard.stats
           <div className="bg-[#00000033] p-4 backdrop-blur-[20px]">
             <p className="text-sm text-gray-300 mb-2">Referral Link</p>
 
-            <div className="bg-black border border-[#81ECFF] rounded-lg p-3 text-xs mb-4 break-all">
-              {dashboard.referralLink}
-            </div>
+          <div className="bg-black border border-[#81ECFF] rounded-lg p-3 text-xs mb-4 truncate">
+  {dashboard.referralLink}
+</div>
 
             <div className="flex gap-3">
               <button
@@ -512,6 +515,13 @@ const stats = dashboard.stats
                 <Share2 size={16} />
                 Share
               </button>
+
+              <button
+  onClick={() => setShowQR(true)}
+  className="flex-1 bg-[linear-gradient(45deg,#587FFF,#09239F)] hover:bg-[linear-gradient(45deg,#6C8CFF,#0B2ED1)] text-white text-sm py-3 rounded-full flex items-center justify-center gap-2 transition-all active:scale-95"
+>
+  QR Code
+</button>
             </div>
           </div>
         </motion.div>
@@ -569,7 +579,53 @@ const stats = dashboard.stats
             </div>
           </div>
         </motion.div>
+
+
+
       </div>
+
+      {/* QR Modal */}
+{showQR && (
+  <div className="fixed  inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-2">
+    
+    <div className="relative  mb-20 w-full max-w-sm rounded-xl border border-[#81ECFF55] bg-[#0B0F19] px-4 py-4 text-center">
+
+      {/* Close */}
+     {/* Close */}
+<button
+  onClick={() => setShowQR(false)}
+  className="absolute top-3 right-3 w-9 h-9 flex items-center justify-center rounded-full bg-white/5 border border-white/10 text-gray-400 hover:text-white hover:bg-white/10 transition-all duration-200 active:scale-95"
+>
+  <X size={18} strokeWidth={2.5} />
+</button>
+
+      <h2 className="text-xl font-semibold mb-2">
+        Referral QR Code
+      </h2>
+
+      {/* QR */}
+      <div className="bg-white p-4 rounded-2xl inline-block">
+        <QRCodeSVG
+  value={dashboard.referralLink}
+  size={200}
+/>
+      </div>
+
+      {/* Link */}
+      <p className="text-xs text-gray-500 break-all mt-2">
+        {dashboard.referralLink}
+      </p>
+
+      {/* Copy */}
+      <button
+        onClick={handleCopy}
+        className="w-full mt-2 py-3 rounded-xl bg-gradient-to-r from-[#587FFF] to-[#09239F]"
+      >
+        Copy Referral Link
+      </button>
+    </div>
+  </div>
+)}
     </motion.div>
   );
 };

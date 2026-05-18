@@ -10,7 +10,7 @@ import PaymentScreen from "../Components/AddFund/PaymentScreen";
 import ReferralTeamTree from "../Components/Settings/Pages/ReferralTeamTree";
 
 import Loader from "../Context/Loader";
-// import WebProfile from "../Components/Settings/Pages/WebProfile";
+import WebProfile from "../Components/Settings/Pages/WebProfile";
 import Profile from "../Components/Settings/Pages/Profile";
 
 function AppWrapper() {
