@@ -18,6 +18,8 @@ const WalletHero = () => {
     },
     investments: {
       totalInvested: 0,
+      totalReturnTokens: 0,
+      totalClaimedTokens: 0,
     },
     currentTokenPrice: 0,
     roiInUsd: 0,
@@ -105,6 +107,16 @@ const WalletHero = () => {
     value: `$${format3(overview.investments.totalInvested)}`,
     sub: "All Time",
   },
+  {
+  title: "LOCKED TOKENS",
+  value: `${format3(overview.investments.totalReturnTokens)} CIP`,
+  sub: "Total Locked",
+},
+{
+  title: "CLAIMED TOKENS",
+  value: `${format3(overview.investments.totalClaimedTokens)} CIP`,
+  sub: "Total Claimed",
+},
 {
   title: "REFERRAL (Usdc)",
   value: `$${format3(overview.wallets.referral)}`,
@@ -119,6 +131,7 @@ const WalletHero = () => {
   button: "Withdraw",
   path: "/settings/withdraw-usdt",
 },
+
 
 ];
 
@@ -161,8 +174,16 @@ const WalletHero = () => {
 
           <div className="flex justify-between items-center mb-2">
             <h2 className="text-white font-semibold text-lg">
-              Wallet Overview
+              Total Earning →
             </h2>
+            <p className="text-emerald-400 text-lg font-semibold">
+              {overviewLoading
+                ? "..."
+                : `$${format3(
+                    Number(overview.wallets.referral || 0) +
+                      Number(overview.roiInUsd || 0)
+                  )}`}
+            </p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

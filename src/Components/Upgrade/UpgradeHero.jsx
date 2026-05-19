@@ -163,8 +163,8 @@ const handleInvest = async () => {
     return;
   }
 
-  if (!investAmount || investAmount < 5) {
-    toast.error("Minimum investment amount is 5");
+  if (!investAmount || investAmount < 2) {
+    toast.error("Minimum investment amount is 2");
     return;
   }
 
@@ -256,7 +256,7 @@ const startDate = new Date().toLocaleDateString();
           <h2 className="text-white text-lg font-semibold mb-3">Investment Plans</h2>
 
           {/* 2x2 Grid Cards */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
+          {/* <div className="grid grid-cols-2 gap-3 mb-6">
             <div className="group rounded-2xl border-2 border-[#444385] hover:border-transparent overflow-hidden">
               <div className="bg-[#00000033] p-3 h-full backdrop-blur-[20px] transition-all duration-300 group-hover:bg-[linear-gradient(180deg,_#020204_0%,_#2C6096_100%)] group-hover:border-l-[5px] group-hover:border-l-[#587FFF]">
                 <p className="text-gray-400 text-sm">Total Investment</p>
@@ -292,23 +292,25 @@ const startDate = new Date().toLocaleDateString();
 </p>
               </div>
             </div>
-          </div>
+          </div> */}
 
-          <div className="rounded-2xl border-2 border-[#444385] overflow-hidden mb-6">
+          <div className="rounded-xl border-2 border-[#444385] overflow-hidden mb-6">
             <div className="bg-[#00000033] p-4 backdrop-blur-[20px]">
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-gray-400 text-sm">Deposit Wallet Balance</p>
-                  <p className="text-emerald-400 text-2xl font-semibold mt-2">
-                    {overviewLoading ? "..." : Number(overview?.wallets?.deposit || 0).toFixed(3)}
-                  </p>
+                <p className="text-emerald-400 text-xl font-semibold mt-2">
+  {overviewLoading
+    ? "..."
+    : `$${Number(overview?.wallets?.deposit || 0).toFixed(3)}`}
+</p>
                 </div>
                 <Wallet size={28} className="text-[#81ECFF]" />
               </div>
             </div>
           </div>
 
-          <div className="rounded-2xl border-2 border-[#444385] overflow-hidden mb-6">
+          {/* <div className="rounded-2xl border-2 border-[#444385] overflow-hidden mb-6">
             <div className="bg-[#00000033] p-4 backdrop-blur-[20px]">
               <div className="flex items-center justify-between gap-4">
                 <div>
@@ -321,7 +323,7 @@ const startDate = new Date().toLocaleDateString();
                 <Coins size={28} className="text-[#FFD166]" />
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Deposit Input */}
          <div className="my-6">
@@ -340,7 +342,7 @@ const startDate = new Date().toLocaleDateString();
       />
 
       <p className="text-xs text-gray-500 mt-3 pl-2">
-        Minimum deposit: 5 USDC
+        Minimum deposit: 2 USDC
       </p>
     </div>
     <div className="grid grid-cols-4 gap-3 mb-5">
@@ -389,7 +391,7 @@ const startDate = new Date().toLocaleDateString();
             </div>
 
             <div className="flex justify-between">
-              <span className="text-gray-400">Total Tokens (with 10% bonus)</span>
+              <span className="text-gray-400">Total Tokens (10% bonus)</span>
               <span className="text-emerald-400 font-semibold">
                 {totalReturn.toFixed(2)} CIP
               </span>

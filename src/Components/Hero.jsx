@@ -45,6 +45,8 @@ const HomeDashboard = () => {
   const [chartFilter, setChartFilter] = useState("1W");
 const [investmentChartData, setInvestmentChartData] = useState(null);
 const [showQR, setShowQR] = useState(false);
+const [tokenInfo, setTokenInfo] = useState({ totalSupply: 0, burnSupply: 0, updatedAt: "" });
+const [tokenLoading, setTokenLoading] = useState(true);
   // const [dashboardData, setDashboardData] = useState(null);
   // const [loading, setLoading] = useState(true);
   // const [error, setError] = useState(null);
@@ -117,6 +119,43 @@ const [showQR, setShowQR] = useState(false);
     }
   };
   fetchInvestments();
+}, []);
+
+useEffect(() => {
+  const fetchTokenInfo = async () => {
+    setTokenLoading(true);
+    const endpoints = ["/public/supply", "/token/supply", "/token/info", "/token", "/token/token-info"];
+
+    for (const endpoint of endpoints) {
+      try {
+        const res = await api.get(endpoint);
+        const payload = res.data?.data || res.data;
+
+        if (
+          payload &&
+          (payload.totalSupply !== undefined ||
+            payload.burnSupply !== undefined ||
+            payload.burnedSupply !== undefined ||
+            payload.burned !== undefined)
+        ) {
+          setTokenInfo({
+            totalSupply: Number(payload.totalSupply || 0),
+            burnSupply: Number(
+              payload.burnSupply ?? payload.burnedSupply ?? payload.burned ?? 0
+            ),
+            updatedAt: payload.updatedAt || res.data?.updatedAt || "",
+          });
+          break;
+        }
+      } catch (err) {
+        // try next endpoint
+      }
+    }
+
+    setTokenLoading(false);
+  };
+
+  fetchTokenInfo();
 }, []);
 
   // Icon Mapping (Backend does not send icons)
@@ -331,7 +370,11 @@ const stats = dashboard.stats
       item.title !== "ACTIVE PACKAGE" &&
     item.title !== "WALLET BALANCE" &&
     item.title !== "ROI EARNINGS" &&
-    item.title !== "DIRECT TEAM"
+    item.title !== "DIRECT TEAM" &&
+    item.title!== "TOTAL DEPOSIT" &&
+    item.title !== "TOTAL EARNINGS" &&
+    item.title !== "ROI (CIP) EARNINGS" &&
+    item.title !== "REFERRAL EARNINGS" 
   )
   .map((item) => ({
     ...item,
@@ -398,6 +441,46 @@ const stats = dashboard.stats
           ))}
         </motion.div>
 
+        <motion.div
+          className="space-y-4 "
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ delay: 0.22 }}
+        >
+          <motion.div
+            className="group rounded-2xl border-2 border-[#444385] overflow-hidden hover:scale-105 transition-transform duration-300"
+            whileHover={{ scale: 1.02 }}
+          >
+            <div className="bg-[#00000033] p-4 backdrop-blur-[20px] transition-all duration-300 group-hover:bg-[linear-gradient(180deg,#020204,#2C6096)] group-hover:border-l-[5px] group-hover:border-l-[#587FFF]">
+              <div className="flex justify-between">
+                <p className="text-gray-400 text-xs">Total Supply</p>
+                <div className="text-yellow-300">
+                  <Coins size={18} />
+                </div>
+              </div>
+              <p className="text-white text-lg font-semibold mt-2">
+                {tokenLoading ? "..." : Number(tokenInfo.totalSupply || 0).toLocaleString()}
+              </p>
+            </div>
+          </motion.div>
+
+          <motion.div
+            className="group rounded-2xl border-2 border-[#444385] overflow-hidden hover:scale-105 transition-transform duration-300"
+            whileHover={{ scale: 1.02 }}
+          >
+            <div className="bg-[#00000033] p-4 backdrop-blur-[20px] transition-all duration-300 group-hover:bg-[linear-gradient(180deg,#020204,#2C6096)] group-hover:border-l-[5px] group-hover:border-l-[#587FFF]">
+              <div className="flex justify-between">
+                <p className="text-gray-400 text-xs">Burned Supply</p>
+                <div className="text-cyan-300">
+                  <BarChart3 size={18} />
+                </div>
+              </div>
+              <p className="text-white text-lg font-semibold mt-2">
+                {tokenLoading ? "..." : Number(tokenInfo.burnSupply || 0).toLocaleString()}
+              </p>
+            </div>
+          </motion.div>
+        </motion.div>
 
         {/* DEXSCREENER CHART */}
 <motion.div
