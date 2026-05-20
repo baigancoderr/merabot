@@ -424,12 +424,12 @@ const Profile = () => {
     }
   };
 
-  // ─── Handler: Wallet edit button ─────────────────────────────────────────
+  // ─── Handler: Wallet edit button @gouriiii_bot ─────────────────────────────────────────
   const handleUpdate = () => setIsEditing(true);
 
   // ─── Referral link ───────────────────────────────────────────────────────
   // apiUser nahi aaya to "loading" placeholder dikhao
-  const referralLink = `https://t.me/cipera_bot?startapp=${apiUser?.referralCode || "loading"}`;
+  const referralLink = `https://t.me/gouriiii_bot?startapp=${apiUser?.referralCode || "loading"}`;
 
   // ─── Handler: Referral share ─────────────────────────────────────────────
   // Priority: Telegram share sheet → Native share API → Fallback new tab
