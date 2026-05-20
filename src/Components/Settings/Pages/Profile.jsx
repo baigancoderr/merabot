@@ -8,71 +8,88 @@ import SkeletonPage from "../../../Layout/Skeleton";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { QRCodeSVG } from "qrcode.react";
 
-// ─── /me fetcher (outside component, no stale closure issues) ───────────────
+// ─── /me fetcher ─────────────────────────────────────────────────────────────
+// Component ke bahar hai taaki har render pe naya function na bane
+// (stale closure issue avoid hota hai)
 const fetchMe = async () => {
   const token = localStorage.getItem("token");
+
+  // Agar token hi nahi hai to fetch mat karo — useQuery ko signal bhejo
   if (!token) throw new Error("NO_TOKEN");
 
   const res = await api.get("/user/me", {
     headers: { Authorization: `Bearer ${token}` },
   });
 
+  // Backend ne success:false bheja to bhi error throw karo
   if (!res.data.success) throw new Error("FETCH_FAILED");
 
-  // Keep localStorage in sync
+  // localStorage ko hamesha latest user data se sync rakho
   localStorage.setItem("user", JSON.stringify(res.data.user));
+
   return res.data.user;
 };
 
+// ─── Profile Component ────────────────────────────────────────────────────────
 const Profile = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // ─── Telegram user state (set after tg.ready()) ──────────────────────────
+  // Telegram WebApp se mila user object — referral popup mein avatar dikhane ke liye
   const [tgUser, setTgUser] = useState(null);
 
-  // loading = true only during Telegram init phase
+  // loading = true sirf Telegram init phase mein
+  // jab tak ye true hai skeleton dikhta hai chahe kuch bhi ho
   const [loading, setLoading] = useState(true);
 
-  // saving = true while wallet POST/PUT is in flight
+  // saving = true jab wallet ka POST/PUT in-flight ho
+  // double submit prevent karta hai
   const [saving, setSaving] = useState(false);
 
-  // walletAddress = controlled input value for wallet field
+  // walletAddress = wallet input field ka controlled value
   const [walletAddress, setWalletAddress] = useState("");
 
-  // isSaved = true once wallet has been saved at least once
+  // isSaved = true ek baar wallet save ho jaye
+  // (future use ke liye rakha hai, abhi isEditing se kaam chalta hai)
   const [isSaved, setIsSaved] = useState(false);
 
-  // isEditing = true shows wallet input, false shows wallet display
+  // isEditing = true → wallet input dikhao
+  // isEditing = false → wallet display row dikhao
   const [isEditing, setIsEditing] = useState(true);
 
-  // showReferralPopup = true when new user opens app without referral in URL
+  // showReferralPopup = true jab naya user directly app khole bina referral link ke
   const [showReferralPopup, setShowReferralPopup] = useState(false);
 
-  // inputReferral = controlled input value in referral popup
+  // inputReferral = referral popup ke input ka controlled value
   const [inputReferral, setInputReferral] = useState("");
 
-  // ─── Wallet & Email tab state ─────────────────────────────────────────────
-  // activeInfoTab controls which tab is shown: "wallet" or "email"
+  // activeInfoTab = "wallet" ya "email" — kaun sa tab active hai
   const [activeInfoTab, setActiveInfoTab] = useState("wallet");
 
-  // emailEdit = controlled input value for email field
+  // emailEdit = email input field ka controlled value
   const [emailEdit, setEmailEdit] = useState("");
 
-  // isEmailEditing = true shows email input, false shows email display
+  // isEmailEditing = true → email input dikhao
+  // isEmailEditing = false → email display row dikhao
   const [isEmailEditing, setIsEmailEditing] = useState(false);
 
-  // emailSaving = true while email POST/PUT is in flight
+  // emailSaving = true jab email ka POST/PUT in-flight ho
   const [emailSaving, setEmailSaving] = useState(false);
 
-  // showQR = true opens QR code modal
+  // showQR = true → QR code modal khulta hai
   const [showQR, setShowQR] = useState(false);
 
-  // ─── FIX: tokenReady state ────────────────────────────────────────────────
-  // Initialised lazily from localStorage so existing users get true immediately.
-  // New users start with false → useQuery stays disabled → no 401 crash.
-  // After Telegram login succeeds we call setTokenReady(true) which re-renders
-  // the component, flips enabled to true, and useQuery fires with a valid token.
+  // ─── FIX 1: tokenReady state ──────────────────────────────────────────────
+  //
+  // YE CRITICAL HAI — seedha localStorage.getItem() useQuery ke enabled mein
+  // dene se React reactively update nahi karta tha.
+  //
+  // Lazy initializer use kiya hai:
+  //   - Existing user: localStorage mein token hai → true → useQuery turant fire hoti hai
+  //   - New user: localStorage mein kuch nahi → false → useQuery disabled rehti hai
+  //
+  // Baad mein jab Telegram login success hota hai tab setTokenReady(true) call hota hai
+  // jisse React re-render karta hai, enabled=true hota hai, aur /me fetch shuru hoti hai
   const [tokenReady, setTokenReady] = useState(
     () => !!localStorage.getItem("token")
   );
@@ -85,38 +102,64 @@ const Profile = () => {
     queryKey: ["me"],
     queryFn: fetchMe,
 
-    // Uses reactive state — NOT direct localStorage call.
-    // React re-evaluates this whenever tokenReady changes.
+    // FIX 1 ka result: reactive state se enabled control hota hai
+    // direct localStorage call se nahi — isliye naye users mein 401 nahi aata
     enabled: tokenReady,
 
-    staleTime: 5 * 60 * 1000,       // 5 min — avoid unnecessary refetches
-    refetchOnWindowFocus: false,     // don't refetch when tab regains focus
-    refetchOnMount: false,           // use cache on subsequent mounts
-    refetchOnReconnect: false,       // don't refetch on network reconnect
+    staleTime: 5 * 60 * 1000,    // 5 min tak cache fresh maana jayega
+    refetchOnWindowFocus: false,  // tab switch pe refetch mat karo
+    refetchOnMount: false,        // baar baar mount pe cache use karo
+    refetchOnReconnect: false,    // network reconnect pe refetch mat karo
 
     retry: (failureCount, error) => {
-      // If token is missing entirely, clear storage and stop retrying
+      // Token bilkul nahi hai — localStorage clear karo aur retry band karo
       if (error?.message === "NO_TOKEN") {
         localStorage.clear();
         return false;
       }
-      // For other errors (network blip, server error) retry once
+      // Network blip ya server error — sirf ek baar retry karo
       return failureCount < 1;
     },
   });
 
-  // showSkeleton = true during Telegram init OR during first /me fetch
-  const showSkeleton = loading || (!apiUser && meLoading);
+  // ─── FIX 2: showSkeleton condition ───────────────────────────────────────
+  //
+  // PURANA CODE (broken):
+  //   const showSkeleton = loading || (!apiUser && meLoading)
+  //
+  //   Problem: New user direct open kare →
+  //     Telegram init khatam → loading=false
+  //     tokenReady=false → meLoading=false (query disabled hai)
+  //     showSkeleton = false → Main JSX render hota hai
+  //     apiUser = undefined → apiUser.name → CRASH! TypeError!
+  //
+  // NAYA CODE (fixed):
+  //   Teen conditions add ki hain:
+  //   1. loading          → Telegram init chal rahi hai
+  //   2. !apiUser && meLoading   → Query chal rahi hai, data abhi nahi aaya
+  //   3. !apiUser && !tokenReady → Token nahi hai, query disabled hai
+  //                                 (new user direct open karne pe yahi case hai)
+  //                                 Is case mein skeleton dikhta rahega
+  //                                 aur referral popup uske upar overlay karega
+  //
+  // TEEN CASES mein se koi ek true hoga to skeleton dikhega:
+  //   Existing user:    loading=true (Telegram init), phir meLoading=true (/me), phir false → Main UI
+  //   New user + link:  loading=true (Telegram init), phir meLoading=true (/me), phir false → Main UI
+  //   New user direct:  loading=true, phir !tokenReady=true → Skeleton + Referral popup on top
+  //                     Submit ke baad tokenReady=true → meLoading=true → apiUser aaya → Main UI
+  const showSkeleton = loading || (!apiUser && meLoading) || (!apiUser && !tokenReady);
 
-  // ─── Sync wallet & email fields whenever apiUser arrives ─────────────────
-  // Runs when cache data lands AND when fresh network data lands
+  // ─── Effect: apiUser sync ─────────────────────────────────────────────────
+  // Jab bhi apiUser fresh aaye (cache se ya network se) input fields sync karo
   useEffect(() => {
     if (apiUser) {
+      // Agar wallet save hai to display mode mein dikhao
       if (apiUser.walletAddress) {
         setWalletAddress(apiUser.walletAddress);
         setIsSaved(true);
         setIsEditing(false);
       }
+      // Agar email save hai to display mode mein dikhao
       if (apiUser.email) {
         setEmailEdit(apiUser.email);
         setIsEmailEditing(false);
@@ -124,73 +167,94 @@ const Profile = () => {
     }
   }, [apiUser]);
 
-  // ─── Telegram init effect ─────────────────────────────────────────────────
-  // Runs once on mount. Handles 3 cases:
-  //   1. Existing user   → login succeeds → setTokenReady(true) → useQuery fires
-  //   2. New user + link → referral in URL → auto-register → setTokenReady(true)
-  //   3. New user direct → no referral → show popup
+  // ─── Effect: Telegram init ───────────────────────────────────────────────
+  //
+  // Teen cases handle karta hai:
+  //   Case A: Existing user  → login → setTokenReady(true) → useQuery fires
+  //   Case B: New user + link → register → setTokenReady(true) → useQuery fires
+  //   Case C: New user direct → no token → setShowReferralPopup(true)
+  //           (skeleton continue dikhega — FIX 2 ki wajah se)
   useEffect(() => {
     const initTelegram = async () => {
       try {
         const tg = window.Telegram?.WebApp;
+
+        // Agar Telegram WebApp available nahi (browser dev mode etc.)
         if (!tg) {
-          // Not inside Telegram (e.g. browser dev mode) — stop loading gate
           setLoading(false);
           return;
         }
 
+        // Telegram ko signal do ki app ready hai
         tg.ready();
+
         const user = tg.initDataUnsafe?.user;
+
+        // Agar Telegram user data nahi mila (rare edge case)
         if (!user) {
-          // Telegram available but user data missing — stop loading gate
           setLoading(false);
           return;
         }
 
-        // Save Telegram user for referral popup avatar display
+        // Referral popup mein Telegram avatar + name dikhane ke liye save karo
         setTgUser(user);
 
-        // Read referral code from Telegram deep link or fallback URL param
+        // Referral code do jagah se read karo:
+        //   1. Telegram deep link param (primary)
+        //   2. URL query param ?ref= (fallback for browser testing)
         const urlParams = new URLSearchParams(window.location.search);
         const referralCode =
           tg.initDataUnsafe?.start_param || urlParams.get("ref") || "";
 
+        // Backend ko login/register request bhejo
         const res = await api.post("/user/telegram-login", {
           telegramId: user.id,
           name: `${user.first_name} ${user.last_name || ""}`,
           username: user.username || "",
-          referralCode,
+          referralCode, // existing user ke liye ignore hoga backend mein
         });
 
         const data = res.data;
 
         if (data.success) {
-          // ── Existing user OR new user with valid referral link ───────────
+          // ── Case A + B: Login ya registration successful ──────────────
+          // Token aur user IDs localStorage mein save karo
           localStorage.setItem("token", data.token);
           localStorage.setItem("userId", data.user.userId || data.user._id);
+
+          // Agar referral code tha to use bhi save karo
           if (referralCode) localStorage.setItem("referral", referralCode);
 
+          // Popup close karo (agar kisi wajah se khula tha)
           setShowReferralPopup(false);
 
-          // KEY FIX: flip tokenReady → useQuery's enabled becomes true →
-          // React re-renders → /me fetch fires immediately with valid token
+          // FIX 1 ka core: tokenReady flip karo
+          // → React re-render karega
+          // → useQuery ka enabled = true ho jayega
+          // → /me fetch immediately fire hogi valid token ke saath
           setTokenReady(true);
 
-          // Invalidate any stale cache so fresh user data is fetched
+          // Cache invalidate karo taaki fresh /me data aaye
           await queryClient.invalidateQueries({ queryKey: ["me"] });
 
         } else if (data.isNewUser || data.message?.toLowerCase().includes("referral")) {
-          // ── New user opened app directly — needs to enter referral ───────
+          // ── Case C: Naya user, referral nahi diya ──────────────────────
+          // Referral popup dikhao
+          // tokenReady mat badlo — abhi koi token nahi hai
+          // FIX 2 ki wajah se skeleton dikhta rahega popup ke peeche
           setShowReferralPopup(true);
-          // Do NOT setTokenReady here — no token yet
+
         } else {
+          // Koi aur error — user ko batao
           toast.error(data.message || "Login failed");
         }
+
       } catch (error) {
         console.error("Telegram Login Error:", error);
         toast.error("Something went wrong");
       } finally {
-        // Always release the Telegram init loading gate
+        // HAMESHA loading false karo — chahe success ho ya error
+        // Ye skeleton ka loading gate release karta hai
         setLoading(false);
       }
     };
@@ -198,29 +262,33 @@ const Profile = () => {
     initTelegram();
   }, [queryClient]);
 
-  // ─── Lock body scroll when referral popup is visible ─────────────────────
+  // ─── Effect: body scroll lock ─────────────────────────────────────────────
+  // Referral popup khule to background scroll band karo
   useEffect(() => {
     document.body.style.overflow = showReferralPopup ? "hidden" : "auto";
   }, [showReferralPopup]);
 
-  // ─── Referral code submit handler ─────────────────────────────────────────
-  // Called when user manually enters their referral code in the popup
+  // ─── Handler: Referral code submit ───────────────────────────────────────
+  // Jab user manually referral code enter karke "Continue" dabaye
   const handleReferralSubmit = async () => {
-    // Validate format: must match CPR + 6 uppercase alphanumeric chars
+    // Format validate karo: CPR + exactly 6 uppercase letters/numbers
     if (!/^CPR[A-Z0-9]{6}$/.test(inputReferral)) {
       toast.error("Invalid Referral Code");
       return;
     }
 
     setLoading(true);
+
     try {
       const tg = window.Telegram?.WebApp;
       const user = tg?.initDataUnsafe?.user;
+
       if (!user) {
         toast.error("Telegram user not found");
         return;
       }
 
+      // Wahi login endpoint dubara call karo, is baar referral code ke saath
       const res = await api.post("/user/telegram-login", {
         telegramId: user.id,
         name: `${user.first_name} ${user.last_name || ""}`,
@@ -231,22 +299,29 @@ const Profile = () => {
       const data = res.data;
 
       if (data.success) {
-        // Save everything to localStorage
+        // Token aur IDs save karo
         localStorage.setItem("token", data.token);
         localStorage.setItem("referral", inputReferral);
         localStorage.setItem("userId", data.user.userId || data.user._id);
 
+        // Popup band karo
         setShowReferralPopup(false);
+
         toast.success("Login Success ✅");
 
-        // KEY FIX: same pattern — flip tokenReady so useQuery fires
+        // FIX 1: tokenReady flip karo — same pattern as initTelegram
+        // → useQuery fire hogi → /me aayega → apiUser set hoga
+        // → showSkeleton false hoga → Main UI dikhega
         setTokenReady(true);
 
-        // Invalidate cache so fresh /me data is loaded
+        // Cache invalidate karo taaki fresh data aaye
         await queryClient.invalidateQueries({ queryKey: ["me"] });
+
       } else {
+        // Invalid code ya koi aur backend error
         toast.error(data.message || "Login failed");
       }
+
     } catch (err) {
       console.error("Referral Submit Error:", err);
       toast.error("Something went wrong");
@@ -255,20 +330,23 @@ const Profile = () => {
     }
   };
 
-  // ─── Wallet save / update handler ─────────────────────────────────────────
-  // Uses POST if no wallet exists yet, PUT if updating existing wallet
+  // ─── Handler: Wallet save / update ───────────────────────────────────────
+  // POST → naya wallet add karo
+  // PUT  → existing wallet update karo
   const handleSaveWallet = async () => {
     if (!walletAddress.trim()) {
       toast.error("Enter wallet address");
       return;
     }
-    // Prevent double-submit while already saving
+
+    // Double-submit prevent karo
     if (saving) return;
 
     try {
       setSaving(true);
       const token = localStorage.getItem("token");
 
+      // apiUser mein walletAddress hai ya nahi isse decide hoga POST ya PUT
       const res = !apiUser?.walletAddress
         ? await api.post(
             "/user/add-wallet",
@@ -284,7 +362,7 @@ const Profile = () => {
       if (res.data.success) {
         toast.success(res.data.message || "Wallet saved successfully");
 
-        // Invalidate → useQuery refetches → wallet field syncs via useEffect
+        // Cache invalidate → useQuery refetch → useEffect mein wallet sync hoga
         await queryClient.invalidateQueries({ queryKey: ["me"] });
 
         setIsSaved(true);
@@ -292,6 +370,7 @@ const Profile = () => {
       } else {
         toast.error(res.data.message || "Failed");
       }
+
     } catch (err) {
       console.error(err);
       toast.error(err?.response?.data?.message || "API Error");
@@ -300,8 +379,9 @@ const Profile = () => {
     }
   };
 
-  // ─── Email save / update handler ──────────────────────────────────────────
-  // Uses POST if no email exists yet, PUT if updating existing email
+  // ─── Handler: Email save / update ────────────────────────────────────────
+  // POST → naya email add karo
+  // PUT  → existing email update karo
   const handleSaveEmail = async () => {
     if (!emailEdit.trim()) {
       toast.error("Enter email");
@@ -309,10 +389,11 @@ const Profile = () => {
     }
 
     setEmailSaving(true);
+
     try {
       const token = localStorage.getItem("token");
 
-      // Same pattern as wallet — POST for first time, PUT for update
+      // apiUser mein email hai ya nahi isse decide hoga POST ya PUT
       const isUpdate = !!apiUser?.email;
 
       const res = isUpdate
@@ -329,11 +410,13 @@ const Profile = () => {
 
       if (res.data.success) {
         toast.success(res.data.message || "Email updated");
+        // Cache invalidate → useQuery refetch → useEffect mein email sync hoga
         await queryClient.invalidateQueries({ queryKey: ["me"] });
         setIsEmailEditing(false);
       } else {
         toast.error(res.data.message);
       }
+
     } catch (err) {
       toast.error(err?.response?.data?.message || "Failed to update email");
     } finally {
@@ -341,13 +424,15 @@ const Profile = () => {
     }
   };
 
-  // ─── Wallet edit button handler ───────────────────────────────────────────
+  // ─── Handler: Wallet edit button ─────────────────────────────────────────
   const handleUpdate = () => setIsEditing(true);
 
-  // ─── Referral link helpers ────────────────────────────────────────────────
+  // ─── Referral link ───────────────────────────────────────────────────────
+  // apiUser nahi aaya to "loading" placeholder dikhao
   const referralLink = `https://t.me/cipera_bot?startapp=${apiUser?.referralCode || "loading"}`;
 
-  // Share via Telegram share sheet, native share API, or fallback new tab
+  // ─── Handler: Referral share ─────────────────────────────────────────────
+  // Priority: Telegram share sheet → Native share API → Fallback new tab
   const handleShare = () => {
     const text = "Join and earn 🚀";
     if (window.Telegram?.WebApp) {
@@ -364,7 +449,7 @@ const Profile = () => {
     }
   };
 
-  // Copy referral link to clipboard
+  // ─── Handler: Copy referral link ─────────────────────────────────────────
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(referralLink);
@@ -374,13 +459,81 @@ const Profile = () => {
     }
   };
 
-  // ─── Loading gate ─────────────────────────────────────────────────────────
-  // Show skeleton during Telegram init OR while first /me fetch is in flight
+  // ─── Skeleton gate ───────────────────────────────────────────────────────
+  // FIX 2 wali condition yahan check hoti hai
+  // Teen mein se koi bhi true ho to skeleton dikhao:
+  //   1. Telegram init chal rahi hai (loading=true)
+  //   2. /me query chal rahi hai aur data nahi aaya (!apiUser && meLoading)
+  //   3. Token ready nahi aur data nahi — new user direct open case
+  //      (!apiUser && !tokenReady)
   if (showSkeleton) {
-    return <SkeletonPage type="profile" />;
+    return (
+      <>
+        {/* Skeleton background mein dikhta hai */}
+        <SkeletonPage type="profile" />
+
+        {/* ── REFERRAL POPUP (skeleton ke upar) ────────────────────────── */}
+        {/* New user direct case mein showReferralPopup=true hoga        */}
+        {/* Ye popup skeleton ke upar overlay ki tarah dikhega            */}
+        {showReferralPopup && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+            <div className="bg-[#0B0F19] border border-[#81ECFF] rounded-2xl p-5 w-[90%] max-w-sm text-center">
+
+              <h2 className="text-lg font-semibold mb-2">Enter Referral Code</h2>
+
+              {/* Telegram avatar + name */}
+              <div className="flex flex-col items-center mb-3">
+                <img
+                  src={tgUser?.photo_url || userimg2}
+                  className="w-16 h-16 rounded-full mb-2"
+                  alt="telegram avatar"
+                />
+                <p className="text-sm text-white">
+                  {tgUser?.first_name} {tgUser?.last_name}
+                </p>
+                <p className="text-xs text-gray-400">@{tgUser?.username}</p>
+              </div>
+
+              {/* Referral code input — auto uppercase */}
+              <input
+                type="text"
+                value={inputReferral}
+                onChange={(e) => setInputReferral(e.target.value.toUpperCase())}
+                placeholder="Enter CPRXXXXXX"
+                className="w-full px-3 py-2 rounded-lg bg-black border border-[#444] text-white mb-3"
+              />
+
+              {/* Submit button — disabled + spinner while loading */}
+              <button
+                onClick={handleReferralSubmit}
+                disabled={loading}
+                className={`w-full py-2 rounded-lg flex items-center justify-center gap-2 bg-gradient-to-r from-[#587FFF] to-[#09239F] ${
+                  loading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+              >
+                {loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Continue"
+                )}
+              </button>
+
+            </div>
+          </div>
+        )}
+      </>
+    );
   }
 
   // ─── Main render ──────────────────────────────────────────────────────────
+  // Yahan tak pahunchne ka matlab hai:
+  //   loading = false  (Telegram init khatam)
+  //   apiUser = defined (data aa gaya)
+  //   tokenReady = true (token valid hai)
+  // Toh apiUser.name etc. safely access ho sakta hai — koi crash nahi
   return (
     <div className="min-h-screen flex justify-center pb-24 px-2 py-3 text-white">
       <div className="w-full max-w-md">
@@ -408,7 +561,7 @@ const Profile = () => {
         <div className="relative rounded-2xl border border-[#81ECFF99] p-[1px] mb-5 bg-gradient-to-br from-blue-500/20 to-black/30">
           <div className="rounded-2xl p-4 bg-[#0B0F19]">
 
-            {/* Avatar + name + email row */}
+            {/* Avatar row */}
             <div className="flex items-center gap-4 min-w-0">
               <img
                 src={userimg2}
@@ -425,7 +578,7 @@ const Profile = () => {
               </div>
             </div>
 
-            {/* User ID + Parent ID badges */}
+            {/* User ID + Parent ID */}
             <div className="grid grid-cols-2 gap-3 mt-4">
               <div className="bg-[#00000020] p-3 rounded-xl border border-[#444B55]">
                 <p className="text-xs text-gray-400">USER ID</p>
@@ -440,7 +593,7 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* ── WALLET + EMAIL TABBED SECTION ── */}
+        {/* ── WALLET + EMAIL TABS ── */}
         <div className="rounded-2xl border border-[#444B55] bg-[#00000033] backdrop-blur-[10px] mb-4 overflow-hidden">
 
           {/* Tab header */}
@@ -476,7 +629,6 @@ const Profile = () => {
             {activeInfoTab === "wallet" && (
               <div className="space-y-3">
 
-                {/* Label row + edit button */}
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-sm text-gray-400">Your Wallet address</p>
                   {!isEditing && (
@@ -491,22 +643,18 @@ const Profile = () => {
 
                 {isEditing ? (
                   <>
-                    {/* Warning note about Base Network only */}
+                    {/* Base Network warning */}
                     <div className="mt-2 mb-4 rounded-xl border border-blue-500/20 bg-blue-500/10 p-3">
-                      <p className="text-blue-400 text-xs font-semibold mb-1">
-                        Note:
-                      </p>
+                      <p className="text-blue-400 text-xs font-semibold mb-1">Note:</p>
                       <p className="text-[11px] leading-relaxed text-blue-100/80">
                         Please enter your{" "}
-                        <span className="text-blue-300 font-semibold">
-                          Base Network{" "}
-                        </span>
-                        wallet address only. Sending assets from unsupported
-                        networks may result in permanent loss of funds.
+                        <span className="text-blue-300 font-semibold">Base Network </span>
+                        wallet address only. Sending assets from unsupported networks
+                        may result in permanent loss of funds.
                       </p>
                     </div>
 
-                    {/* Wallet input with clear button */}
+                    {/* Wallet input */}
                     <div className="relative">
                       <input
                         type="text"
@@ -525,11 +673,10 @@ const Profile = () => {
                       )}
                     </div>
 
-                    {/* Cancel + Save/Update buttons */}
+                    {/* Cancel + Save */}
                     <div className="flex gap-2 pt-1">
                       <button
                         onClick={() => {
-                          // Reset to last saved value and exit edit mode
                           setWalletAddress(apiUser?.walletAddress || "");
                           setIsEditing(false);
                         }}
@@ -542,22 +689,16 @@ const Profile = () => {
                         disabled={saving}
                         className="flex-1 py-2.5 rounded-xl text-sm bg-gradient-to-r from-[#587FFF] to-[#09239F] text-white font-medium disabled:opacity-50 active:scale-95 transition"
                       >
-                        {saving
-                          ? "Saving..."
-                          : apiUser?.walletAddress
-                          ? "Update"
-                          : "Save"}
+                        {saving ? "Saving..." : apiUser?.walletAddress ? "Update" : "Save"}
                       </button>
                     </div>
                   </>
                 ) : (
-                  /* Wallet display row (non-editing state) */
+                  /* Wallet display */
                   <div className="flex items-center gap-3 bg-black/40 border border-[#ffffff10] rounded-xl px-4 py-3">
                     <p className="text-sm text-gray-300 break-all flex-1 leading-relaxed">
                       {walletAddress || (
-                        <span className="text-gray-600 italic">
-                          Not set yet
-                        </span>
+                        <span className="text-gray-600 italic">Not set yet</span>
                       )}
                     </p>
                     {walletAddress && (
@@ -580,7 +721,6 @@ const Profile = () => {
             {activeInfoTab === "email" && (
               <div className="space-y-3">
 
-                {/* Label row + edit button */}
                 <div className="flex items-center justify-between mb-1">
                   <p className="text-sm text-gray-400">Your Email address</p>
                   {!isEmailEditing && (
@@ -595,7 +735,7 @@ const Profile = () => {
 
                 {isEmailEditing ? (
                   <>
-                    {/* Email input with clear button */}
+                    {/* Email input */}
                     <div className="relative">
                       <input
                         type="email"
@@ -614,11 +754,10 @@ const Profile = () => {
                       )}
                     </div>
 
-                    {/* Cancel + Save/Update buttons */}
+                    {/* Cancel + Save */}
                     <div className="flex gap-2 pt-1">
                       <button
                         onClick={() => {
-                          // Reset to last saved value and exit edit mode
                           setEmailEdit(apiUser?.email || "");
                           setIsEmailEditing(false);
                         }}
@@ -631,22 +770,16 @@ const Profile = () => {
                         disabled={emailSaving}
                         className="flex-1 py-2.5 rounded-xl text-sm bg-gradient-to-r from-purple-600 to-[#09239F] text-white font-medium disabled:opacity-50 active:scale-95 transition"
                       >
-                        {emailSaving
-                          ? "Saving..."
-                          : apiUser?.email
-                          ? "Update"
-                          : "Save"}
+                        {emailSaving ? "Saving..." : apiUser?.email ? "Update" : "Save"}
                       </button>
                     </div>
                   </>
                 ) : (
-                  /* Email display row (non-editing state) */
+                  /* Email display */
                   <div className="flex items-center gap-3 bg-black/40 border border-[#ffffff10] rounded-xl px-4 py-3">
                     <p className="text-sm text-gray-300 break-all flex-1">
                       {emailEdit || (
-                        <span className="text-gray-600 italic">
-                          Not set yet
-                        </span>
+                        <span className="text-gray-600 italic">Not set yet</span>
                       )}
                     </p>
                     {emailEdit && (
@@ -672,12 +805,10 @@ const Profile = () => {
         <div className="rounded-xl border border-[#444B55] p-4 bg-[#00000020]">
           <p className="text-sm text-gray-300 mb-2">Referral Link</p>
 
-          {/* Referral link display — single line, overflow hidden */}
           <div className="bg-black border border-[#81ECFF] rounded-lg px-3 py-2 text-xs mb-3 overflow-hidden whitespace-nowrap text-ellipsis">
             {referralLink}
           </div>
 
-          {/* Copy / Share / QR buttons */}
           <div className="flex gap-2">
             <button
               onClick={handleCopy}
@@ -702,12 +833,11 @@ const Profile = () => {
 
       </div>
 
-      {/* ── QR CODE MODAL ── */}
+      {/* ── QR MODAL ── */}
       {showQR && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
           <div className="relative w-full max-w-sm rounded-xl border border-[#81ECFF55] bg-[#0B0F19] p-4 text-center">
 
-            {/* Close button */}
             <button
               onClick={() => setShowQR(false)}
               className="absolute top-3 right-3 text-gray-400 hover:text-white"
@@ -717,17 +847,14 @@ const Profile = () => {
 
             <h2 className="text-xl font-semibold mb-2">Referral QR Code</h2>
 
-            {/* QR code — white background for scanner contrast */}
             <div className="bg-white p-4 rounded-2xl inline-block">
               <QRCodeSVG value={referralLink} size={220} />
             </div>
 
-            {/* Full link displayed below QR */}
             <p className="text-xs text-gray-500 break-all mt-5">
               {referralLink}
             </p>
 
-            {/* Copy button inside modal */}
             <button
               onClick={handleCopy}
               className="w-full mt-5 py-3 rounded-xl bg-gradient-to-r from-[#587FFF] to-[#09239F]"
@@ -738,28 +865,27 @@ const Profile = () => {
         </div>
       )}
 
-      {/* ── REFERRAL CODE ENTRY POPUP ── */}
-      {/* Shown when new user opens app directly without a referral link */}
+      {/* ── REFERRAL POPUP (main render mein bhi) ── */}
+      {/* Ye sirf tab dikhega jab koi skeleton ke baad bhi popup chahiye ho */}
+      {/* Edge case: agar somehow showSkeleton false ho gaya lekin popup true rahe */}
       {showReferralPopup && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
           <div className="bg-[#0B0F19] border border-[#81ECFF] rounded-2xl p-5 w-[90%] max-w-sm text-center">
 
             <h2 className="text-lg font-semibold mb-2">Enter Referral Code</h2>
 
-            {/* Telegram avatar + name display */}
             <div className="flex flex-col items-center mb-3">
               <img
                 src={tgUser?.photo_url || userimg2}
                 className="w-16 h-16 rounded-full mb-2"
                 alt="telegram avatar"
               />
-              <p className="text-sm">
+              <p className="text-sm text-white">
                 {tgUser?.first_name} {tgUser?.last_name}
               </p>
               <p className="text-xs text-gray-400">@{tgUser?.username}</p>
             </div>
 
-            {/* Referral code input — auto-uppercased */}
             <input
               type="text"
               value={inputReferral}
@@ -768,7 +894,6 @@ const Profile = () => {
               className="w-full px-3 py-2 rounded-lg bg-black border border-[#444] text-white mb-3"
             />
 
-            {/* Submit button — disabled + spinner while loading */}
             <button
               onClick={handleReferralSubmit}
               disabled={loading}
