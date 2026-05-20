@@ -98,6 +98,9 @@ const Profile = () => {
   const {
     data: apiUser,
     isLoading: meLoading,
+    isError: meError,
+    error: meErrorObj,
+    refetch: refetchMe,
   } = useQuery({
     queryKey: ["me"],
     queryFn: fetchMe,
@@ -235,7 +238,7 @@ const Profile = () => {
           setTokenReady(true);
 
           // Cache invalidate karo taaki fresh /me data aaye
-          await queryClient.invalidateQueries({ queryKey: ["me"] });
+          await queryClient.invalidateQueries({ queryKey: ["me"], refetchInactive: true });
 
         } else if (data.isNewUser || data.message?.toLowerCase().includes("referral")) {
           // ── Case C: Naya user, referral nahi diya ──────────────────────
@@ -315,7 +318,7 @@ const Profile = () => {
         setTokenReady(true);
 
         // Cache invalidate karo taaki fresh data aaye
-        await queryClient.invalidateQueries({ queryKey: ["me"] });
+        await queryClient.invalidateQueries({ queryKey: ["me"], refetchInactive: true });
 
       } else {
         // Invalid code ya koi aur backend error
@@ -525,6 +528,29 @@ const Profile = () => {
           </div>
         )}
       </>
+    );
+  }
+
+  if (meError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 py-6 text-white">
+        <div className="w-full max-w-md rounded-3xl border border-[#444B55] bg-[#0B0F19] p-6 shadow-xl shadow-blue-500/10">
+          <h2 className="text-xl font-semibold mb-3">Something went wrong</h2>
+          <p className="text-sm text-gray-400 mb-6">
+            {meErrorObj?.message || "Unable to load your account. Please try again."}
+          </p>
+          <button
+            onClick={async () => {
+              setLoading(true);
+              await refetchMe();
+              setLoading(false);
+            }}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-[#587FFF] to-[#09239F] text-white font-medium"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
     );
   }
 
