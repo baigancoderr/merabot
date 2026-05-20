@@ -1,6 +1,6 @@
 export const appConfig = {
   baseURL: "https://cipbackend-1.onrender.com",
-  frontendURL: "https://urbanrwa.io",
+  frontendURL: "https://merabot.vercel.app",
   chainID: 56n,
   defaultReferral: "URWA00001",
   DEPOSIT_ADDRESS :'0x1a0aeacBF68369B6591dE050eEC10226b32e59A8',
