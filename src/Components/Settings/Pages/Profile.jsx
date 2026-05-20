@@ -73,7 +73,10 @@ const Profile = () => {
 
 
 
-  const showSkeleton = loading || (!apiUser && meLoading);
+  const showSkeleton =
+  loading || (!!localStorage.getItem("token") && !apiUser && meLoading);
+
+
 
   // ─── Sync wallet field when apiUser arrives from cache or network ────────
   useEffect(() => {
@@ -268,7 +271,9 @@ const Profile = () => {
   const handleUpdate = () => setIsEditing(true);
 
   // ─── Referral link ───────────────────────────────────────────────────────
-  const referralLink = `https://t.me/gouriiii_bot?startapp=${apiUser?.referralCode || "loading"}`;
+ const referralLink = apiUser?.referralCode
+  ? `https://t.me/gouriiii_bot?startapp=${apiUser.referralCode}`
+  : "";
 
   const handleShare = () => {
     const text = "Join and earn 🚀";
@@ -299,6 +304,14 @@ const Profile = () => {
   // Show skeleton during Telegram init OR first /me fetch
 if (showSkeleton) {
   return <SkeletonPage type="profile" />;
+}
+
+if (!apiUser && !showReferralPopup && !loading && !meLoading) {
+  return (
+    <div className="text-center text-red-400 mt-10">
+      Failed to load profile
+    </div>
+  );
 }
 
   return (
@@ -336,11 +349,11 @@ if (showSkeleton) {
 
   <div className="min-w-0 flex-1">
     <h2 className="text-xl font-bold truncate">
-      {apiUser.name}
+     {apiUser?.name || "Guest User"}
     </h2>
 
     <p className="text-sm text-gray-400 break-all">
-      {apiUser.email}
+      {apiUser?.email || "No Email"}
     </p>
   </div>
 </div>
