@@ -2,8 +2,10 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://backend.cipera.net/",
+  // baseURL: "https://backend.cipera.net/",
+  baseURL: "https://cipbackend-1.onrender.com/",
   //  baseURL: "http://localhost:5000",
+ 
   
 });
 
